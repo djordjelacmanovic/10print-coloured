@@ -1,0 +1,25 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: install node
+      uses: actions/setup-node@v2
+    - name: Install Deps
+      run: yarn
+    - name: Build the JS bundle
+      run: yarn build
+    - name: Publish static site to Github Pages
+      uses: JamesIves/github-pages-deploy-action@4.1.0
+      with:
+        branch: gh-pages
+        folder: public/
