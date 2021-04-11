@@ -1,6 +1,6 @@
 export class Triangle {
   static get Colours(){
-    return ['#A34C2C', '#F06835', '#29AAF0', '#A3800B', '#F0BF1D'];
+    return ['#A34C2C', '#F06835', '#29AAF0', '#A3800B', '#F0BF1D', '#8DA83D', '#33F59A'];
   }
 
   constructor(p5) {
