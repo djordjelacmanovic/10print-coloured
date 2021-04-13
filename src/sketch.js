@@ -1,7 +1,7 @@
 import p5 from 'p5';
 import { Grid } from './grid';
 
-const defaultTileSize = 15;
+const defaultTileSize = 25;
 
 const roundToMultipleOf = (num, div) => Math.round(num / div) * div;
 

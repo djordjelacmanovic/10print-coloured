@@ -1,21 +1,34 @@
-import { Triangle } from './triangle';
+import { TopLeftCornerTriangle, TopRightCornerTriangle, BottomLeftCornerTriangle, BottomRightCornerTriangle } from './triangle';
 
-export class Tile {
+export { buildTile };
+
+// could be a separate Abstract Factory
+const buildTile = (p5, position, grid, orientation = p5.random([Tile.Orientation.FWD, Tile.Orientation.BCK])) => {
+  let klass = orientation == Tile.Orientation.FWD ? ForwardTile : BackwardTile;
+  return new klass(p5, position, grid);
+}
+
+
+class Tile {
   static get Orientation() {
     return {
       FWD: 'forward',
       BCK: 'backward'
     };
   }
-  
-  constructor(p5, {x, y}, grid, orientation = p5.random([Tile.Orientation.FWD, Tile.Orientation.BCK])) {
+    
+  constructor(p5, position, grid) {
     this._p5 = p5;
-    this.x = x;
-    this.y = y;
+    this._position = position;
     this.grid = grid;
-    this.orientation = orientation;
-    this.leftTriangle = new Triangle(this._p5);
-    this.rightTriangle = new Triangle(this._p5);
+  }
+
+  get x(){
+    return this._position.x;
+  }
+
+  get y(){
+    return this._position.y;
   }
 
   draw(){
@@ -25,20 +38,11 @@ export class Tile {
 
   initTriangles(){
     this.leftTriangle.left = this.leftTile && this.leftTile.rightTriangle;
-    this.leftTriangle.top = this.orientation == Tile.Orientation.FWD 
-        ? this.topTile && this.topTile.bottomTriangle
-        : null;
-    this.leftTriangle.bottom = this.orientation == Tile.Orientation.FWD 
-        ? null
-        : this.bottomTile && this.bottomTile.topTriangle;
-    
+    this.leftTriangle.top = this.topTile && this.topTile.bottomTriangle;
+    this.leftTriangle.bottom = this.bottomTile && this.bottomTile.topTriangle;
     this.rightTriangle.right = this.rightTile && this.rightTile.leftTriangle;
-    this.rightTriangle.top = this.orientation == Tile.Orientation.FWD 
-      ? null
-      : this.topTile && this.topTile.bottomTriangle;
-    this.rightTriangle.bottom = this.orientation == Tile.Orientation.FWD 
-      ? this.bottomTile && this.bottomTile.topTriangle
-      : null;
+    this.rightTriangle.top = this.topTile && this.topTile.bottomTriangle;
+    this.rightTriangle.bottom = this.bottomTile && this.bottomTile.topTriangle;
   }
 
   fillColour(){
@@ -46,51 +50,22 @@ export class Tile {
     this.rightTriangle.fillColour();
   }
 
-  get topTriangle(){
-    if(this.orientation == Tile.Orientation.FWD)
-      return this.leftTriangle;
-    else
-      return this.rightTriangle;
-  }
-
-  get bottomTriangle(){
-    if(this.orientation == Tile.Orientation.FWD)
-      return this.rightTriangle;
-    else
-      return this.leftTriangle;
-  }
-
   _drawTriangles(){
-    let { left, right } = this.triangleVertices;
+    this._drawTriangle(this.leftTriangle);
+    this._drawTriangle(this.rightTriangle);
+  }
 
+  _drawTriangle(triangle){
+    let vertices = this._verticesToP5args(triangle.calculateVertices(this._position, this.size));
     this._p5.push();
     this._p5.strokeWeight(0);
-    this._p5.fill(this.leftTriangle.colour || 'white');
-    this._p5.triangle(...left);
-    this._p5.fill(this.rightTriangle.colour || 'white');
-    this._p5.triangle(...right);
+    this._p5.fill(triangle.colour);
+    this._p5.triangle(...vertices);
     this._p5.pop();
   }
 
-  _drawLine(){
-    if(this.orientation == Tile.Orientation.FWD)
-      this._p5.line(this.x, this.y + this.size, this.x + this.size, this.y);
-    else 
-      this._p5.line(this.x, this.y, this.x + this.size, this.y + this.size);
-  }
-
-  get triangleVertices(){
-    if(this.orientation == Tile.Orientation.FWD){
-      return {
-        left: [this.x, this.y, this.x + this.size, this.y, this.x, this.y + this.size],
-        right: [this.x, this.y + this.size, this.x + this.size, this.y, this.x + this.size, this.y + this.size]
-      }
-    } else {
-      return {
-        left: [this.x, this.y, this.x, this.y + this.size, this.x + this.size, this.y + this.size],
-        right: [this.x, this.y, this.x + this.size, this.y, this.x + this.size, this.y + this.size]
-      }
-    }
+  _verticesToP5args(vertArray){
+    return vertArray.map(({x,y}) => [x, y]).flat();
   }
 
   get leftTile(){
@@ -111,5 +86,47 @@ export class Tile {
   
   get size(){
     return this.grid.tileSize;
+  }
+}
+
+class ForwardTile extends Tile {
+  constructor(...args){
+    super(...args);
+
+    this.leftTriangle = new TopLeftCornerTriangle(this._p5);
+    this.rightTriangle = new BottomRightCornerTriangle(this._p5);
+  }
+
+  get topTriangle(){
+    return this.leftTriangle;
+  }
+
+  get bottomTriangle(){
+    return this.rightTriangle;
+  }
+
+  _drawLine(){
+    this._p5.line(this.x, this.y + this.size, this.x + this.size, this.y);
+  }
+}
+
+class BackwardTile extends Tile {
+  constructor(...args){
+    super(...args);
+
+    this.leftTriangle = new BottomLeftCornerTriangle(this._p5);
+    this.rightTriangle = new TopRightCornerTriangle(this._p5);
+  }
+
+  get topTriangle(){
+    return this.rightTriangle;
+  }
+
+  get bottomTriangle(){
+    return this.leftTriangle;
+  }
+
+  _drawLine(){
+    this._p5.line(this.x, this.y, this.x + this.size, this.y + this.size);
   }
 }
